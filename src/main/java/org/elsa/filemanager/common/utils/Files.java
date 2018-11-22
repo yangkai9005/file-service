@@ -17,6 +17,7 @@ public class Files {
          * 文件白名单
          */
         TXT("4a656e6b", "txt"),
+        JPEG("ffd8ffe0", "jpeg"),
         XML("3c3f786d", "xml");
 
         private String value;
@@ -75,7 +76,7 @@ public class Files {
             int i = inputStream.read(bytes, 0, 28);
 
             if (-1 == i) {
-                throw new RuntimeException("Error read inputSteam to bytes.");
+                throw new RuntimeException("Error reading inputSteam to bytes.");
             }
 
             inputStream.close();

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.elsa.filemanager.core.mapper.FileMapper">
+
+    <!-- 查询所有用户信息 -->
+    <select id="queryByFilename"  resultType="org.elsa.filemanager.core.entity.FileSystem">
+        select `id`, `savedFileName` from `filemanager`.`filesystem` where `savedFileName` = #{fileName} limit 1
+    </select>
+
+</mapper>

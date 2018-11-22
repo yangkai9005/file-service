@@ -11,15 +11,15 @@ import org.elsa.filemanager.common.utils.Encrypt;
 import org.elsa.filemanager.common.utils.Files;
 import org.elsa.filemanager.common.utils.Ips;
 import org.elsa.filemanager.core.entity.FileSystem;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -82,7 +82,7 @@ public class FileOpsController extends BaseController {
 
                 // 如果没有抛出异常 则文件后缀名取白名单中的后缀名
                 long time = System.currentTimeMillis();
-                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), fileType.getExt(), super.fileDir);
+                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), fileType.getExt(), super.getFileDir());
                 saved.put(entry.getKey(), fileSavedName);
 
                 // 数据库保存文件相关数据 并发不高时无所谓
@@ -107,8 +107,51 @@ public class FileOpsController extends BaseController {
     }
 
     @Override
-    public GeneralResult<String> getFile(String fileName) {
-        return null;
+    public void getFile(@PathVariable("fileName") String fileName, HttpServletResponse response) {
+        if (null == fileName) {
+            throw new NoteException("Null of file name.");
+        }
+
+        FileSystem fileSystem = super.fileMapper.queryByFilename(fileName);
+        if (null == fileSystem) {
+            throw new NoteException("No such file.");
+        }
+
+        InputStream fis = null;
+        try {
+            // 读取图片流
+            fis = new FileInputStream(super.getFileDir() + fileName);
+            byte[] bytes = new byte[fis.available()];
+            int i = fis.read(bytes);
+
+            if (-1 == i) {
+                throw new NoteException("Error reading file to bytes.");
+            }
+
+            // 清空response
+            response.reset();
+            // 设置请求response
+            response.setContentType("image/gif");
+
+            OutputStream out = response.getOutputStream();
+            out.write(bytes);
+            out.flush();
+
+            fileSystem.setService(System.currentTimeMillis());
+            super.generalDaoHelper.save(fileSystem);
+
+        } catch (Exception e) {
+            throw new NoteException(e);
+        } finally {
+            if (null != fis) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 
     /**
@@ -118,10 +161,6 @@ public class FileOpsController extends BaseController {
     private String saveTo(long time, InputStream stream,String fileName, String ext, String dir) {
         if (stream == null) {
             throw new RuntimeException("No inputSteam in file.");
-        }
-
-        if (!StringUtils.endsWith(dir, File.separator)) {
-            dir += File.separator;
         }
 
         String saveName = time + "-" + Encrypt.md5AndBase64(time + fileName) + "." + ext;
