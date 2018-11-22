@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.elsa.filemanager.common.dao.GeneralDaoHandler">
+
+    <!--执行insert后 获取插入的数据id-->
+    <insert id="add" parameterType="map" flushCache="true">
+        <selectKey keyProperty="id" resultType="int" order="AFTER">
+            select last_insert_id()
+        </selectKey>
+
+        insert into `${tableName}`
+        <foreach collection="properties" item="item" open="(" separator="," close=")">
+            `${item.name}`
+        </foreach>
+        VALUES
+        <foreach collection="properties" item="item" open="(" separator="," close=")">
+            #{item.value}
+        </foreach>
+    </insert>
+
+    <!--批量插入 -->
+    <insert id="addList" parameterType="map" flushCache="true">
+        insert into `${tableName}`
+        <foreach collection="colName" item="name" open="(" separator="," close=")">
+            `${name}`
+        </foreach>
+        VALUES
+        <foreach collection="valueList" item="values" open="(" separator="," close=")">
+            <foreach collection="values" item="value" separator=",">
+                <if test="value == null">
+                    null
+                </if>
+
+                <if test="value != null">
+                    #{value}
+                </if>
+            </foreach>
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="map" flushCache="true">
+        update `${tableName}`
+        set
+        <foreach collection="properties" item="item" separator=",">
+            `${item.name}` = #{item.value}
+        </foreach>
+        where `${idName}` = ${idValue}
+    </update>
+
+    <delete id="delete" parameterType="Map" flushCache="true">
+        DELETE FROM `${tableName}`
+        WHERE `${idName}` = #{idValue}
+    </delete>
+
+    <select id="queryOne" parameterType="map" resultType="map">
+        select * from `${tableName}`
+        where `${idName}` = ${idValue}
+        limit 1
+    </select>
+
+    <select id="query" parameterType="map" resultType="map">
+        select * from `${tableName}`
+        where `${primaryKey}` >= (select `${primaryKey}` from user order by `${primaryKey}` limit ${start}, 1)
+
+        <if test="properties != null">
+            <foreach collection="properties" item="item" separator=" ">
+                and `${item.name}`=#{item.value}
+            </foreach>
+        </if>
+        <if test="likeProperties != null">
+            <foreach collection="likeProperties" item="item" separator=" ">
+                and `${item.name}` like '%${item.value}%'
+            </foreach>
+        </if>
+        <!--自定义参数-->
+        <if test="userPara != null">
+            <foreach collection="userPara" item="item" separator=" ">
+                ${item}
+            </foreach>
+        </if>
+        limit ${limit}
+    </select>
+
+    <select id="queryByMultiValue" resultType="map">
+        SELECT
+        *
+        FROM `${table}`
+        WHERE `${prop}` IN
+        <foreach collection="values" item="value" open="(" close=")" separator=",">
+            #{value}
+        </foreach>
+    </select>
+
+    <select id="queryCount" parameterType="map" resultType="int">
+        select count(*) from `${tableName}`
+        where 1 = 1
+        <if test="properties != null">
+            <foreach collection="properties" item="item" separator="">
+                and `${item.name}`=#{item.value}
+            </foreach>
+        </if>
+        <if test="likeProperties != null">
+            <foreach collection="likeProperties" item="item" separator=" ">
+                and `${item.name}` like '%${item.value}%'
+            </foreach>
+        </if>
+        <!--自定义参数-->
+        <if test="userPara != null">
+            <foreach collection="userPara" item="item" separator=" ">
+                ${item}
+            </foreach>
+        </if>
+    </select>
+
+</mapper>
