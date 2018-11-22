@@ -23,7 +23,7 @@ import java.io.File;
 @RestController
 public abstract class BaseController {
 
-    @Value("${file-dir}")
+    @Value("${config.file-dir}")
     private String fileDir;
 
     @Autowired

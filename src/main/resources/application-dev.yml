@@ -35,4 +35,7 @@ mybatis:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-file-dir: image
+config:
+  file-dir: image
+  xml-location: /Users/valor/Desktop/liumu/file-manager/src/main/resources/white-list.xml
+  token-ncr: zd//fI16CjKXCB9Of0tj0A==
