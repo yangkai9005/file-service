@@ -27,6 +27,11 @@ public abstract class BaseController {
     @Value("${config.file-dir}")
     private String fileDir;
 
+    @Value("${config.token-ncr}")
+    protected String tokenNcr;
+
+    protected static final String NCR = "token-ncr";
+
     @Autowired
     protected HttpServletRequest request;
 
@@ -46,6 +51,12 @@ public abstract class BaseController {
         }
         return dir;
     }
+
+    /**
+     * 刷新缓存
+     */
+    @RequestMapping(value = "/flush", method = RequestMethod.GET)
+    public abstract GeneralResult<String> flush();
 
     /**
      * 上传图片

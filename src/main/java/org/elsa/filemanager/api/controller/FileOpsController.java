@@ -32,6 +32,17 @@ import java.util.Map;
 public class FileOpsController extends BaseController {
 
     @Override
+    public GeneralResult<String> flush() {
+        if (!StringUtils.equals(super.tokenNcr, super.request.getHeader(NCR))) {
+            throw new NoteException("Permission denied.");
+        }
+
+        super.fileTypeManager.flushCache();
+        Map<String, String> mapCache = super.fileTypeManager.getCacheType();
+        return new GeneralResult<String>().setValue(mapCache.toString());
+    }
+
+    @Override
     public GeneralResult<FileSavedResult> upload() {
         // 判断content-type 是否为 form-data
         if (!StringUtils.contains(super.request.getContentType(), "form-data")) {
