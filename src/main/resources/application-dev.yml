@@ -37,5 +37,6 @@ mybatis:
 
 config:
   file-dir: image
-  xml-location: /Users/valor/Desktop/liumu/file-manager/src/main/resources/white-list.xml
+  xml-location: config/white-list.xml
   token-ncr: zd//fI16CjKXCB9Of0tj0A==
+  expired-day: 180
