@@ -33,7 +33,7 @@ public class FileOpsController extends BaseController {
 
     @Override
     public GeneralResult<String> flush() {
-        if (!StringUtils.equals(super.tokenNcr, super.request.getHeader(NCR))) {
+        if (!StringUtils.equals(super.config.getTokenNcr(), super.request.getHeader(NCR))) {
             throw new NoteException("Permission denied.");
         }
 
@@ -100,7 +100,7 @@ public class FileOpsController extends BaseController {
 
                 // 如果没有抛出异常 则文件后缀名取白名单中的后缀名
                 long time = System.currentTimeMillis();
-                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), ext, super.getFileDir());
+                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), ext, super.config.getFileDir());
                 saved.put(entry.getKey(), fileSavedName);
 
                 // 数据库保存文件相关数据 并发不高时无所谓
@@ -138,7 +138,7 @@ public class FileOpsController extends BaseController {
         InputStream fis = null;
         try {
             // 读取图片流
-            fis = new FileInputStream(super.getFileDir() + fileName);
+            fis = new FileInputStream(super.config.getFileDir() + fileName);
             byte[] bytes = new byte[fis.available()];
             int i = fis.read(bytes);
 

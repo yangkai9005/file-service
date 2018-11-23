@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.elsa.filemanager.api.response.GeneralResult;
 import org.elsa.filemanager.api.response.adapter.FileSavedResult;
 import org.elsa.filemanager.common.cache.FileType;
+import org.elsa.filemanager.common.config.Config;
 import org.elsa.filemanager.common.dao.GeneralDaoHelper;
 import org.elsa.filemanager.core.mapper.FileMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +25,10 @@ import java.io.File;
 @RestController
 public abstract class BaseController {
 
-    @Value("${config.file-dir}")
-    private String fileDir;
-
-    @Value("${config.token-ncr}")
-    protected String tokenNcr;
-
     protected static final String NCR = "token-ncr";
+
+    @Autowired
+    protected Config config;
 
     @Autowired
     protected HttpServletRequest request;
@@ -43,14 +41,6 @@ public abstract class BaseController {
 
     @Autowired
     protected FileType fileTypeManager = FileType.getInstance();
-
-    protected String getFileDir() {
-        String dir = this.fileDir;
-        if (!StringUtils.endsWith(this.fileDir, File.separator)) {
-            dir = this.fileDir + File.separator;
-        }
-        return dir;
-    }
 
     /**
      * 刷新缓存

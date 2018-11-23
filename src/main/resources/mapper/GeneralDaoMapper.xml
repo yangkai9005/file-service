@@ -82,16 +82,6 @@
         limit ${limit}
     </select>
 
-    <select id="queryByMultiValue" resultType="map">
-        SELECT
-        *
-        FROM `${table}`
-        WHERE `${prop}` IN
-        <foreach collection="values" item="value" open="(" close=")" separator=",">
-            #{value}
-        </foreach>
-    </select>
-
     <select id="queryCount" parameterType="map" resultType="int">
         select count(*) from `${tableName}`
         where 1 = 1

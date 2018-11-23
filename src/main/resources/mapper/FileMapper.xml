@@ -3,9 +3,16 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="org.elsa.filemanager.core.mapper.FileMapper">
 
-    <!-- 查询所有用户信息 -->
     <select id="queryByFilename"  resultType="org.elsa.filemanager.core.entity.FileSystem">
         select `id`, `savedFileName` from `filemanager`.`filesystem` where `savedFileName` = #{fileName} limit 1
     </select>
+
+    <select id="queryExpiredFile" resultType="org.elsa.filemanager.core.entity.FileSystem">
+        select `id`, `savedFileName`, `service` from `filemanager`.`filesystem` where `service` &lt; ${service}
+    </select>
+
+    <delete id="deleteById" flushCache="true">
+        delete from `filemanager`.`filesystem` where `id` = ${id}
+    </delete>
 
 </mapper>
