@@ -1,6 +1,5 @@
 package org.elsa.filemanager.api.controller;
 
-import org.apache.commons.lang3.StringUtils;
 import org.elsa.filemanager.api.response.GeneralResult;
 import org.elsa.filemanager.api.response.adapter.FileSavedResult;
 import org.elsa.filemanager.common.cache.FileType;
@@ -8,7 +7,6 @@ import org.elsa.filemanager.common.config.Config;
 import org.elsa.filemanager.common.dao.GeneralDaoHelper;
 import org.elsa.filemanager.core.mapper.FileMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -16,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 
 /**
  * @author valor
