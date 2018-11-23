@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
-    <test>faranga</test>
-    <name>chris</name>
+<project auth="valord577 &lt;valord577@gmail.com&gt;"
+         repo="https://github.com/valord577/file-manager"
+         desc="The whitelist of upload files in file server.">
+
+    <type value="txt">4a656e6b</type>
+    <type value="jpeg">ffd8ffe0</type>
+    <type value="xml">3c3f786d</type>
+    <!--<type value="sh">64736164</type>-->
+
 </project>

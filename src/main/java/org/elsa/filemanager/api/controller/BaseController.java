@@ -3,6 +3,7 @@ package org.elsa.filemanager.api.controller;
 import org.apache.commons.lang3.StringUtils;
 import org.elsa.filemanager.api.response.GeneralResult;
 import org.elsa.filemanager.api.response.adapter.FileSavedResult;
+import org.elsa.filemanager.common.cache.FileType;
 import org.elsa.filemanager.common.dao.GeneralDaoHelper;
 import org.elsa.filemanager.core.mapper.FileMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public abstract class BaseController {
 
     @Autowired
     protected FileMapper fileMapper;
+
+    @Autowired
+    protected FileType fileTypeManager = FileType.getInstance();
 
     protected String getFileDir() {
         String dir = this.fileDir;

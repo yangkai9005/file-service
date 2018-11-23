@@ -1,7 +1,5 @@
 package org.elsa.filemanager.common.utils;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
 
@@ -10,47 +8,6 @@ import java.io.InputStream;
  * @date 2018/11/21 18:05
  */
 public class Files {
-
-    public enum FileType {
-
-        /**
-         * 文件白名单
-         */
-        TXT("4a656e6b", "txt"),
-        JPEG("ffd8ffe0", "jpeg"),
-        XML("3c3f786d", "xml");
-
-        private String value;
-
-        private String ext;
-
-        FileType(String value, String ext) {
-            this.value = value;
-            this.ext = ext;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public String getExt() {
-            return ext;
-        }
-
-        public static FileType getType(String fileHeader) {
-            if (null == fileHeader || 0 >= fileHeader.length()) {
-                throw new RuntimeException("Blank string 'fileHeader'.");
-            }
-
-            for (FileType type : FileType.values()) {
-                if (StringUtils.startsWith(fileHeader, type.value)) {
-                    return type;
-                }
-            }
-
-            throw new RuntimeException("Block this file.");
-        }
-    }
 
     /**
      * 根据文件路径 获取文件头

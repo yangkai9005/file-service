@@ -76,13 +76,20 @@ public class FileOpsController extends BaseController {
             try {
                 String fileHeader = Files.getFileHeader(file.getInputStream());
                 log.info("[ups file] --- " + entry.getKey() + " => " + file.getOriginalFilename() + " | " + fileHeader);
-                Files.FileType fileType = Files.FileType.getType(fileHeader);
+
+                if (StringUtils.isBlank(fileHeader)) {
+                    throw new NoteException("Blank string 'fileHeader'.");
+                }
+                String ext = super.fileTypeManager.getCacheType().get(StringUtils.substring(fileHeader, 0, 8));
+                if (StringUtils.isBlank(ext)) {
+                    throw new NoteException("Block this file.");
+                }
 
                 // todo 判断图片文件是否带有js
 
                 // 如果没有抛出异常 则文件后缀名取白名单中的后缀名
                 long time = System.currentTimeMillis();
-                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), fileType.getExt(), super.getFileDir());
+                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), ext, super.getFileDir());
                 saved.put(entry.getKey(), fileSavedName);
 
                 // 数据库保存文件相关数据 并发不高时无所谓
