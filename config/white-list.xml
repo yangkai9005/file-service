@@ -3,9 +3,11 @@
          repo="https://github.com/valord577/file-manager"
          desc="The whitelist of upload files in file server.">
 
+    <type value="png">89504e47</type>
     <type value="txt">4a656e6b</type>
     <type value="jpeg">ffd8ffe0</type>
     <type value="xml">3c3f786d</type>
+    <type value="jpg">ffd8ffe1</type>
     <!--<type value="sh">64736164</type>-->
 
 </project>
