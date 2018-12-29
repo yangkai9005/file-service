@@ -93,7 +93,7 @@ public class FileOpsController extends BaseController {
                 }
                 String ext = super.fileTypeManager.getCacheType().get(StringUtils.substring(fileHeader, 0, 8));
                 if (StringUtils.isBlank(ext)) {
-                    throw new NoteException("Block this file.");
+                    throw new NoteException("Block this file. [fileHeader: " + StringUtils.substring(fileHeader, 0, 8) + "]");
                 }
 
                 // todo 判断图片文件是否带有js
@@ -181,7 +181,7 @@ public class FileOpsController extends BaseController {
             throw new RuntimeException("No inputSteam in file.");
         }
 
-        String saveName = time + "-" + Encrypt.md5AndBase64(time + fileName) + "." + ext;
+        String saveName = time + "-" + Encrypt.md5HexString(time + fileName) + "." + ext;
 
         try {
             FileOutputStream fos = FileUtils.openOutputStream(new File(dir + saveName));
