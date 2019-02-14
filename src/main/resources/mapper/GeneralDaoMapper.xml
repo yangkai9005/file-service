@@ -26,16 +26,12 @@
             `${name}`
         </foreach>
         VALUES
-        <foreach collection="valueList" item="values" open="(" separator="," close=")">
+        <foreach collection="valueList" item="values" separator=",">
+          (
             <foreach collection="values" item="value" separator=",">
-                <if test="value == null">
-                    null
-                </if>
-
-                <if test="value != null">
-                    #{value}
-                </if>
+                #{value}
             </foreach>
+          )
         </foreach>
     </insert>
 
@@ -49,37 +45,49 @@
     </update>
 
     <delete id="delete" parameterType="Map" flushCache="true">
-        DELETE FROM `${tableName}`
+        DELETE
+        FROM `${tableName}`
         WHERE `${idName}` = #{idValue}
     </delete>
 
     <select id="queryOne" parameterType="map" resultType="map">
-        select * from `${tableName}`
-        where `${idName}` = ${idValue}
+        select *
+        from `${tableName}`
+        where `${idName}` = #{idValue}
         limit 1
     </select>
 
-    <select id="query" parameterType="map" resultType="map">
-        select * from `${tableName}`
-        where `${primaryKey}` >= (select `${primaryKey}` from user order by `${primaryKey}` limit ${start}, 1)
+    <select id="quickQuery" parameterType="map" resultType="map">
+        select *
+        from `${tableName}`
+        where `${idName}` = #{idValue}
+    </select>
 
-        <if test="properties != null">
-            <foreach collection="properties" item="item" separator=" ">
-                and `${item.name}`=#{item.value}
-            </foreach>
-        </if>
-        <if test="likeProperties != null">
-            <foreach collection="likeProperties" item="item" separator=" ">
-                and `${item.name}` like '%${item.value}%'
-            </foreach>
-        </if>
-        <!--自定义参数-->
-        <if test="userPara != null">
-            <foreach collection="userPara" item="item" separator=" ">
-                ${item}
-            </foreach>
-        </if>
-        limit ${limit}
+    <select id="query" parameterType="map" resultType="map">
+        select *
+        from (select `${primaryKey}` from `${tableName}`
+                where 1=1
+
+                <if test="properties != null">
+                    <foreach collection="properties" item="item" separator=" ">
+                        and `${item.name}`=#{item.value}
+                    </foreach>
+                </if>
+                <if test="likeProperties != null">
+                    <foreach collection="likeProperties" item="item" separator=" ">
+                        and `${item.name}` like '${item.value}%'
+                    </foreach>
+                </if>
+                <!--自定义参数-->
+                <if test="userPara != null">
+                    <foreach collection="userPara" item="item" separator=" ">
+                        ${item}
+                    </foreach>
+                </if>
+
+                limit ${offset}, ${limit}
+              ) as p left join `${tableName}` as q
+          on (p.`${primaryKey}` = q.`${primaryKey}`)
     </select>
 
     <select id="queryCount" parameterType="map" resultType="int">
@@ -92,7 +100,7 @@
         </if>
         <if test="likeProperties != null">
             <foreach collection="likeProperties" item="item" separator=" ">
-                and `${item.name}` like '%${item.value}%'
+                and `${item.name}` like '${item.value}%'
             </foreach>
         </if>
         <!--自定义参数-->

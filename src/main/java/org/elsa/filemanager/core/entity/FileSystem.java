@@ -30,6 +30,11 @@ public class FileSystem {
     private String callIp;
 
     /**
+     * 下载次数
+     */
+    private Long number;
+
+    /**
      * 最后一次使用文件的时间戳
      */
     private Long service;
@@ -50,7 +55,7 @@ public class FileSystem {
     private String entryDisplay;
 
     /**
-     * 设置注册时间
+     * 设置最后使用时间
      */
     public void setEntry(Long entry) {
         this.entry = entry;

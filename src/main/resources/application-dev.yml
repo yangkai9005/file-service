@@ -37,6 +37,4 @@ mybatis:
 
 config:
   file-dir: files
-  xml-location: config/white-list.xml
-  token-ncr: zd//fI16CjKXCB9Of0tj0A==
-  expired-day: 180
+  expired-day: 365

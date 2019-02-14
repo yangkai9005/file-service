@@ -1,6 +1,7 @@
 package org.elsa.filemanager.self;
 
 import com.thoughtworks.xstream.XStream;
+import org.elsa.filemanager.common.utils.Encrypt;
 import org.elsa.filemanager.common.utils.XStreams;
 
 import java.util.HashMap;
@@ -26,6 +27,8 @@ public class XStreamTest {
 
         Map<String, String> extractedMap = (Map<String, String>) magicApi.fromXML(xml);
         System.out.println(extractedMap);
+
+        System.out.println(Encrypt.sha256AndBase64("valord577@gmail.com"));
     }
 
 }

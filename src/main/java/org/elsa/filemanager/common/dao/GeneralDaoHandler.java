@@ -45,6 +45,14 @@ public interface GeneralDaoHandler {
     Map<String, Object> queryOne(Map<String, Object> map);
 
     /**
+     * 查询满足某一条件的所有记录
+     *
+     * @param map 参数键值对
+     * @return 结果集（map形式）
+     */
+    List<Map<String, Object>> quickQuery(Map<String, Object> map);
+
+    /**
      * 通用的删除
      *
      * @param map 参数键值对

@@ -6,6 +6,9 @@ spring:
       enabled: true
       charset: UTF-8
       force: true
+  mvc:
+    favicon:
+      enabled: false
 
   profiles:
     active:

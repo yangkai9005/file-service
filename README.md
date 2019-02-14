@@ -6,16 +6,12 @@
 ## 项目配置
 > * 以文件头判断文件类型 与后缀名无关
 > * 文件头可从项目日志中读取 或使用[「Files.getFileHeader()」](src/main/java/org/elsa/filemanager/common/utils/Files.java)
-> * 以[「XML」](config/white-list.xml)文件配置上传文件的白名单 
 > * [「yml」](src/main/resources/application-dev.yml)文件中config域配置项目基本内容 <br>
 
-    file-dir     ->  文件保存目录
-    xml-location ->  XML配置文件
-    token-ncr    ->  鉴权字符串
-    expired-day  ->  过期天数 超过天数文件将被删除
+    file-dir     ->  文件存储目录
+    expired-day  ->  文件过期时间 超过天数文件将被删除
 
 ## api展示
-> * 刷新XML白名单缓存 [「/flush」](.image/flush.jpg)
 > * 上传文件 支持批量 [「/ups」](.image/ups.jpg)
 > * 下载文件 单个下载 [「/get」](.image/get.jpg)
 

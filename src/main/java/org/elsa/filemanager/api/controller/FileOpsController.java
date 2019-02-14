@@ -1,16 +1,17 @@
 package org.elsa.filemanager.api.controller;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.elsa.filemanager.api.response.GeneralResult;
 import org.elsa.filemanager.api.response.adapter.FileSavedResult;
+import org.elsa.filemanager.common.config.Config;
 import org.elsa.filemanager.common.exception.NoteException;
 import org.elsa.filemanager.common.utils.Encrypt;
 import org.elsa.filemanager.common.utils.Files;
 import org.elsa.filemanager.common.utils.Ips;
 import org.elsa.filemanager.core.entity.FileSystem;
+import org.elsa.filemanager.core.entity.Whitelist;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,20 +28,8 @@ import java.util.Map;
  * @author valor
  * @date 2018/11/21 14:34
  */
-@Slf4j
 @RestController
 public class FileOpsController extends BaseController {
-
-    @Override
-    public GeneralResult<String> flush() {
-        if (!StringUtils.equals(super.config.getTokenNcr(), super.request.getHeader(NCR))) {
-            throw new NoteException("Permission denied.");
-        }
-
-        super.fileTypeManager.flushCache();
-        Map<String, String> mapCache = super.fileTypeManager.getCacheType();
-        return new GeneralResult<String>().setValue(mapCache.toString());
-    }
 
     @Override
     public GeneralResult<FileSavedResult> upload() {
@@ -86,13 +75,14 @@ public class FileOpsController extends BaseController {
             // 判断文件头是否在枚举类型内(白名单)
             try {
                 String fileHeader = Files.getFileHeader(file.getInputStream());
-                log.info("[ups file] --- " + entry.getKey() + " => " + file.getOriginalFilename() + " | " + fileHeader);
+                System.out.println("[ups file] --- " + entry.getKey() + " => " + file.getOriginalFilename() + " | " + fileHeader);
 
                 if (StringUtils.isBlank(fileHeader)) {
                     throw new NoteException("Blank string 'fileHeader'.");
                 }
-                String ext = super.fileTypeManager.getCacheType().get(StringUtils.substring(fileHeader, 0, 8));
-                if (StringUtils.isBlank(ext)) {
+
+                Whitelist whitelist = super.generalDaoHelper.quickQueryOne(Whitelist.class, "fileHeader", StringUtils.substring(fileHeader, 0, 8));
+                if (null == whitelist) {
                     throw new NoteException("Block this file. [fileHeader: " + StringUtils.substring(fileHeader, 0, 8) + "]");
                 }
 
@@ -100,7 +90,7 @@ public class FileOpsController extends BaseController {
 
                 // 如果没有抛出异常 则文件后缀名取白名单中的后缀名
                 long time = System.currentTimeMillis();
-                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), ext, super.config.getFileDir());
+                fileSavedName = saveTo(time, file.getInputStream(), file.getOriginalFilename(), whitelist.getExt(), super.config.getFileDir());
                 saved.put(entry.getKey(), fileSavedName);
 
                 // 数据库保存文件相关数据 并发不高时无所谓
@@ -130,9 +120,15 @@ public class FileOpsController extends BaseController {
             throw new NoteException("Null of file name.");
         }
 
-        FileSystem fileSystem = super.fileMapper.queryByFilename(fileName);
+        FileSystem fileSystem = super.generalDaoHelper.quickQueryOne(FileSystem.class, "savedFilename", fileName);
         if (null == fileSystem) {
             throw new NoteException("No such file.");
+        }
+
+        String ext = fileName.substring(fileName.lastIndexOf(".") + 1);
+        Whitelist whitelist = super.generalDaoHelper.quickQueryOne(Whitelist.class, "ext", ext);
+        if (null == whitelist) {
+            throw new NoteException("Not in the whitelist.");
         }
 
         InputStream fis = null;
@@ -149,12 +145,13 @@ public class FileOpsController extends BaseController {
             // 清空response
             response.reset();
             // 设置请求response
-            response.setContentType("image/gif");
+            response.setContentType(whitelist.getContentType());
 
             OutputStream out = response.getOutputStream();
             out.write(bytes);
             out.flush();
 
+            fileSystem.setNumber(fileSystem.getNumber() + 1);
             fileSystem.setService(System.currentTimeMillis());
             super.generalDaoHelper.save(fileSystem);
 

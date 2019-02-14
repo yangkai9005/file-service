@@ -15,9 +15,8 @@ import java.util.List;
 @Repository
 public interface FileMapper {
 
-    FileSystem queryByFilename(@Param("fileName") String fileName);
-
     List<FileSystem> queryExpiredFile(@Param("service") Long service);
 
     void deleteById(@Param("id") Long id);
+
 }

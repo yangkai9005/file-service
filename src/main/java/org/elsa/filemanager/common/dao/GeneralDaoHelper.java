@@ -172,38 +172,41 @@ public class GeneralDaoHelper {
         }
         para.put("tableName", tableName);
 
-        List<String> colName = new ArrayList<>();
-        para.put("colName", colName);
-        // 遍历字段名
         Class<?> clazz = o.getClass();
         Field[] fields = clazz.getDeclaredFields();
-        for (Field field : fields) {
-            // 获取字段对应的value
-            String name = field.getName();
-            if ("id".equalsIgnoreCase(name) || "start".equalsIgnoreCase(name) || "limit".equalsIgnoreCase(name)) {
-                continue;
-            }
-            colName.add(name);
-        }
+
+        // 存放字段名
+        List<String> colName = new ArrayList<>();
+        para.put("colName", colName);
 
         List<List<Object>> valueList = new ArrayList<>();
         para.put("valueList", valueList);
         // 根据字段名 查询字段的值
         List<Object> values;
         // 对list循环
-        for (T object : oList) {
+        for (int i = 0; i < oList.size(); i++) {
+            Object object = oList.get(i);
             clazz = object.getClass();
             values = new ArrayList<>();
 
             // 对list内 字段循环
-            for (String col : colName) {
-                String firstLetter = col.substring(0, 1).toUpperCase();
-                String getMethodName = "get" + firstLetter + col.substring(1);
+            for (Field field : fields) {
+                String name = field.getName();
+                String firstLetter = name.substring(0, 1).toUpperCase();
+                String getMethodName = "get" + firstLetter + name.substring(1);
 
                 try {
                     Method getMethod = clazz.getMethod(getMethodName);
                     Object value = getMethod.invoke(object);
+                    // value为空或者不是基础数据
+                    if (value == null || isNotBasicType(value)) {
+                        continue;
+                    }
 
+                    // 字段名只添加一次
+                    if (i == 0) {
+                        colName.add(name);
+                    }
                     values.add(value);
                 } catch (Exception ignored) {
                     // 跳过没有get的属性
@@ -310,35 +313,86 @@ public class GeneralDaoHelper {
     }
 
     /**
-     * 快速查询只有一个查询参数的对象
-     *
-     * @param clazz 待查询的实体类型
-     * @param name  参数名
-     * @param value 参数值
-     * @return 单条结果
+     * 快速查询只有一个查询参数的对象 默认表名
      */
     public <T> T quickQueryOne(Class<T> clazz, String name, Object value) {
+        return quickQueryOne(clazz, null, name, value);
+    }
+
+    /**
+     * 快速查询只有一个查询参数的对象
+     *
+     * @param clazz     待查询的实体类型
+     * @param tableName 表名
+     * @param name      参数名
+     * @param value     参数值
+     * @return 单条结果
+     */
+    public <T> T quickQueryOne(Class<T> clazz, String tableName, String name, Object value) {
         if (StringUtils.isBlank(name)) {
             throw new RuntimeException("Field name can't be blank.");
         }
-
         if (null == value) {
             throw new RuntimeException("Field value can't be null.");
         }
 
-        try {
-            T object = clazz.newInstance();
-            Field field = clazz.getDeclaredField(name);
-            String fieldName = field.getName();
-            String firstLetter = fieldName.substring(0, 1).toUpperCase();
-            String setMethodName = "set" + firstLetter + fieldName.substring(1);
-            Method method = clazz.getDeclaredMethod(setMethodName, field.getType());
-            method.invoke(object, value);
-
-            return queryOne(object, name);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        Map<String, Object> para = new HashMap<>(8);
+        // 表名为空,按照默认规则生成表名
+        if (StringUtils.isBlank(tableName)) {
+            tableName = generateTableName(clazz);
         }
+        para.put("tableName", tableName);
+        para.put("idName", name);
+        para.put("idValue", value);
+
+        Map<String, Object> map = handleDao.queryOne(para);
+        if (null == map) {
+            return null;
+        }
+        return packResultMap(clazz, map);
+    }
+
+    /**
+     * 查询满足某一条件的所有记录
+     */
+    public <T> List<T> quickQuery(Class<T> clazz, String name, Object value) {
+        return this.quickQuery(clazz, null, name, value);
+    }
+
+    /**
+     * 查询满足某一条件的所有记录
+     *
+     * @param clazz     待查询的实体类型
+     * @param tableName 表名
+     * @param name      参数名
+     * @param value     参数值
+     * @return 结果集
+     */
+    public <T> List<T> quickQuery(Class<T> clazz, String tableName, String name, Object value) {
+        if (StringUtils.isBlank(name)) {
+            throw new RuntimeException("Field name can't be blank.");
+        }
+        if (null == value) {
+            throw new RuntimeException("Field value can't be null.");
+        }
+
+        Map<String, Object> para = new HashMap<>(8);
+        // 表名为空,按照默认规则生成表名
+        if (StringUtils.isBlank(tableName)) {
+            tableName = generateTableName(clazz);
+        }
+        para.put("tableName", tableName);
+        para.put("idName", name);
+        para.put("idValue", value);
+
+        List<Map<String, Object>> result = handleDao.quickQuery(para);
+
+        // 查询结果封装为Object
+        List<T> list = new ArrayList<>();
+        for (Map<String, Object> map : result) {
+            list.add(packResultMap(clazz, map));
+        }
+        return list;
     }
 
     /**
@@ -362,7 +416,7 @@ public class GeneralDaoHelper {
             throw new RuntimeException("Entity or idName can't be null or blank.");
         }
 
-        Map<String, Object> para = new HashMap<>(16);
+        Map<String, Object> para = new HashMap<>(8);
 
         // 表名为空,按照默认规则生成表名
         if (StringUtils.isBlank(tableName)) {
@@ -393,7 +447,7 @@ public class GeneralDaoHelper {
             if (null == map) {
                 return null;
             }
-            return packResultMap(object, clazz, map);
+            return packResultMap(clazz, map);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -407,13 +461,20 @@ public class GeneralDaoHelper {
     }
 
     /**
+     * 删除 默认表名
+     */
+    public <T> void quickDelete(Class<T> clazz, String name, Object value) {
+        this.quickDelete(clazz, null, name, value);
+    }
+
+    /**
      * 删除
      *
      * @param clazz object.class
      * @param name  属性名
      * @param value 属性值
      */
-    public <T> void quickDelete(Class<T> clazz, String name, Object value) {
+    public <T> void quickDelete(Class<T> clazz, String tableName, String name, Object value) {
         if (StringUtils.isBlank(name)) {
             throw new RuntimeException("Field name can't be blank.");
         }
@@ -422,19 +483,16 @@ public class GeneralDaoHelper {
             throw new RuntimeException("Field value can't be null.");
         }
 
-        try {
-            T object = clazz.newInstance();
-            Field field = clazz.getDeclaredField(name);
-            String fieldName = field.getName();
-            String firstLetter = fieldName.substring(0, 1).toUpperCase();
-            String setMethodName = "set" + firstLetter + fieldName.substring(1);
-            Method method = clazz.getDeclaredMethod(setMethodName, field.getType());
-            method.invoke(object, value);
-
-            delete(object, name);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        Map<String, Object> para = new HashMap<>(8);
+        // 表名为空,按照默认规则生成表名
+        if (StringUtils.isBlank(tableName)) {
+            tableName = generateTableName(clazz);
         }
+        para.put("tableName", tableName);
+        para.put("idName", name);
+        para.put("idValue", value);
+
+        handleDao.delete(para);
     }
 
     /**
@@ -458,7 +516,7 @@ public class GeneralDaoHelper {
             throw new RuntimeException("Entity or idName can't be null or blank.");
         }
 
-        Map<String, Object> para = new HashMap<>(16);
+        Map<String, Object> para = new HashMap<>(8);
 
         // 表名为空,按照默认规则生成表名
         if (StringUtils.isBlank(tableName)) {
@@ -541,8 +599,8 @@ public class GeneralDaoHelper {
      *
      * @return count
      */
-    public <T> int queryCountUsingLike(T object, String tableName, List<String> likeProperties) {
-        return queryCount(object, tableName, likeProperties, null);
+    public <T> int queryCountUsingLike(T object, List<String> likeProperties) {
+        return queryCount(object, null, likeProperties, null);
     }
 
     /**
@@ -616,17 +674,6 @@ public class GeneralDaoHelper {
             throw new RuntimeException("Primary key can't be null.");
         }
 
-        Class<?> clazz = object.getClass();
-
-        // 添加主键 作为子查询使用
-        try {
-            clazz.getDeclaredField(primaryKey);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException("No such field: " + primaryKey + " in " + clazz.getName());
-        }
-        Map<String, Object> para = new HashMap<>(16);
-        para.put("primaryKey", primaryKey);
-
         if (null == start) {
             start = 1;
         }
@@ -639,11 +686,20 @@ public class GeneralDaoHelper {
             throw new RuntimeException("Error params of pages.");
         }
 
-        List<T> list = new ArrayList<>();
+        Class<?> clazz = object.getClass();
+
+        // 添加主键 作为子查询使用
+        try {
+            clazz.getDeclaredField(primaryKey);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("No such field: " + primaryKey + " in " + clazz.getName());
+        }
+        Map<String, Object> para = new HashMap<>(16);
+        para.put("primaryKey", primaryKey);
 
         // 用户自己的sql语句片段
         para.put("userPara", userPara);
-        para.put("start", (start - 1) * limit);
+        para.put("offset", (start - 1) * limit);
         para.put("limit", limit);
 
         // 表名为空,按照默认规则生成表名
@@ -661,15 +717,15 @@ public class GeneralDaoHelper {
         para.put("likeProperties", likePros);
 
         /* 对每个字段做处理 */
-        packParasForQuery(object, clazz, likeProperties, likePros, pros);
+        packParasForQuery(object, likeProperties, likePros, pros);
         // 执行查询
         List<Map<String, Object>> result = handleDao.query(para);
 
         // 查询结果封装为Object
+        List<T> list = new ArrayList<>();
         for (Map<String, Object> map : result) {
-            list.add(packResultMap(object, clazz, map));
+            list.add(packResultMap(clazz, map));
         }
-
         return list;
     }
 
@@ -701,7 +757,7 @@ public class GeneralDaoHelper {
 
         /* 对每个字段做处理 */
         Class<?> clazz = object.getClass();
-        packParasForQuery(object, clazz, likeProperties, likePros, pros);
+        packParasForQuery(object, likeProperties, likePros, pros);
 
         return handleDao.queryCount(para);
     }
@@ -710,7 +766,8 @@ public class GeneralDaoHelper {
      * query专用
      * 查询条件para 组装
      */
-    private static <T> void packParasForQuery(T object, Class<?> clazz, List<String> likeProperties, List<Property> likePros, List<Property> pros) {
+    private static <T> void packParasForQuery(T object, List<String> likeProperties, List<Property> likePros, List<Property> pros) {
+        Class<?> clazz = object.getClass();
         Field[] fields = clazz.getDeclaredFields();
         Property property;
         for (Field field : fields) {
@@ -761,10 +818,10 @@ public class GeneralDaoHelper {
      * 查询结果map 组装
      */
     @SuppressWarnings("unchecked")
-    private static <T> T packResultMap(T object, Class<?> clazz, Map<String, Object> map) {
+    private static <T> T packResultMap(Class<?> clazz, Map<String, Object> map) {
         T resultObject = null;
         try {
-            resultObject = (T) object.getClass().newInstance();
+            resultObject = (T) clazz.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -792,7 +849,7 @@ public class GeneralDaoHelper {
                 // 设置entity的字段值
                 if (field.getType().isEnum()) {
                     // 枚举类型
-                    Object objects[] = field.getType().getEnumConstants();
+                    Object[] objects = field.getType().getEnumConstants();
                     for (Object o : objects) {
                         if (value.toString().equalsIgnoreCase(o.toString())) {
                             method.invoke(resultObject, o);
@@ -800,10 +857,10 @@ public class GeneralDaoHelper {
                     }
 
                 } else if (field.getType().toString().contains("Boolean")) {
-                    if ((int) value == 0) {
-                        method.invoke(resultObject, Boolean.FALSE);
-                    } else {
+                    if ((boolean) value) {
                         method.invoke(resultObject, Boolean.TRUE);
+                    } else {
+                        method.invoke(resultObject, Boolean.FALSE);
                     }
                 } else {
                     method.invoke(resultObject, value);
@@ -818,15 +875,27 @@ public class GeneralDaoHelper {
     }
 
     /**
-     * 根据class名称生成表明
+     * 根据object名称生成表明
      * 如 EntityExample.java 则生成 entityExample
      */
-    public String generateTableName(Object object) {
+    private String generateTableName(Object object) {
         if (null == object) {
             throw new RuntimeException("Entity can't be null.");
         }
 
-        String className = object.getClass().getName();
+        return generateTableName(object.getClass());
+    }
+
+    /**
+     * 根据class名称生成表明
+     * 如 EntityExample.java 则生成 entityExample
+     */
+    private String generateTableName(Class<?> clazz) {
+        if (null == clazz) {
+            throw new RuntimeException("Entity can't be null.");
+        }
+
+        String className = clazz.getName();
         String tableName = className.substring(className.lastIndexOf(".") + 1);
         char[] chs = tableName.toCharArray();
         if (chs.length > 0) {

@@ -16,12 +16,14 @@ import java.io.File;
 @Data
 public class Config {
 
+    /**
+     * 存储目录
+     */
     private String fileDir;
 
-    private String xmlLocation;
-
-    private String tokenNcr;
-
+    /**
+     * 过期时间
+     */
     private Long expiredDay;
 
     public String getFileDir() {
