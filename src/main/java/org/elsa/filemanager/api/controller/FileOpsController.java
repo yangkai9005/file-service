@@ -5,11 +5,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.elsa.filemanager.api.response.GeneralResult;
 import org.elsa.filemanager.api.response.adapter.FileSavedResult;
-import org.elsa.filemanager.common.config.Config;
 import org.elsa.filemanager.common.exception.NoteException;
 import org.elsa.filemanager.common.utils.Encrypt;
 import org.elsa.filemanager.common.utils.Files;
-import org.elsa.filemanager.common.utils.Ips;
 import org.elsa.filemanager.core.entity.FileSystem;
 import org.elsa.filemanager.core.entity.Whitelist;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -81,9 +79,9 @@ public class FileOpsController extends BaseController {
                     throw new NoteException("Blank string 'fileHeader'.");
                 }
 
-                Whitelist whitelist = super.generalDaoHelper.quickQueryOne(Whitelist.class, "fileHeader", StringUtils.substring(fileHeader, 0, 8));
+                Whitelist whitelist = super.generalDaoHelper.quickQueryOne(Whitelist.class, "fileHeader", StringUtils.substring(fileHeader, 0, 6));
                 if (null == whitelist) {
-                    throw new NoteException("Block this file. [fileHeader: " + StringUtils.substring(fileHeader, 0, 8) + "]");
+                    throw new NoteException("Block this file. [fileHeader: " + StringUtils.substring(fileHeader, 0, 6) + "]");
                 }
 
                 // todo 判断图片文件是否带有js
@@ -97,7 +95,7 @@ public class FileOpsController extends BaseController {
                 fileSystem = new FileSystem();
                 fileSystem.setSavedFilename(fileSavedName);
                 fileSystem.setOriginalFilename(file.getOriginalFilename());
-                fileSystem.setCallIp(Ips.getIpAddress(super.request));
+                fileSystem.setSize(file.getSize());
                 fileSystem.setEntry(time);
                 fileSystem.setService(time);
                 super.generalDaoHelper.save(fileSystem);
@@ -131,40 +129,64 @@ public class FileOpsController extends BaseController {
             throw new NoteException("Not in the whitelist.");
         }
 
-        InputStream fis = null;
-        try {
-            // 读取图片流
-            fis = new FileInputStream(super.config.getFileDir() + fileName);
-            byte[] bytes = new byte[fis.available()];
-            int i = fis.read(bytes);
+        if (whitelist.getRange()) {
+            // 如果需要断点续传 如视频
+            String range = super.request.getHeader("range");
+            if (StringUtils.isBlank(range) || !StringUtils.startsWith(range, "bytes=")) {
+                throw new NoteException("Required field in request headers - Range. \nTemplate - 'Range: bytes=0-1;'");
+            }
 
-            if (-1 == i) {
-                throw new NoteException("Error reading file to bytes.");
+            // 处理断点字段
+            String[] values = StringUtils.split(StringUtils.split(range, "=")[1], "-");
+            if (values.length == 0) {
+                throw new NoteException("Plz check 'Range' in headers. \nTemplate - 'Range: bytes=0-1;'");
+            }
+
+            // 32Mb 对应的 byte大小
+            int mb32 = 32 * 1024 * 1024;
+
+            int start, end = 0;
+            start = Integer.parseInt(values[0]);
+            if (values.length > 1) {
+                end = Integer.parseInt(values[1]);
+            } else {
+                // 如果文件大于32Mb 则只传32Mb
+                long size = fileSystem.getSize() - start;
+                if (size > mb32) {
+                    end = start + mb32 - 1;
+                } else {
+                    end = Math.toIntExact(size) - 1;
+                }
+            }
+
+            if (start >= end) {
+                throw new NoteException("Plz check 'Range' in headers. \nTemplate - 'Range: bytes=0-1;'");
+            }
+            int reqSize = end - start + 1;
+            // 每次只允许32Mb大小的流进行传输
+            if (reqSize > mb32) {
+                throw new NoteException("Plz check 'Range' in headers. \nrangeStart - rangeEnd <= 32Mb.");
             }
 
             // 清空response
             response.reset();
-            // 设置请求response
             response.setContentType(whitelist.getContentType());
+            // 断点续传的方式来返回视频数据 206
+            response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+            response.setHeader("Accept-Ranges", "bytes");
+            response.setHeader("Content-Length", reqSize + "");
+            response.setHeader("Content-Range", "bytes " + start + "-" + end + "/" + fileSystem.getSize());
+            this.flush(super.config.getFileDir() + fileName, response, start, reqSize, fileSystem);
 
-            OutputStream out = response.getOutputStream();
-            out.write(bytes);
-            out.flush();
 
-            fileSystem.setNumber(fileSystem.getNumber() + 1);
-            fileSystem.setService(System.currentTimeMillis());
-            super.generalDaoHelper.save(fileSystem);
+        } else {
+            // 不需要断点续传 如图片
 
-        } catch (Exception e) {
-            throw new NoteException(e);
-        } finally {
-            if (null != fis) {
-                try {
-                    fis.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            // 清空response
+            response.reset();
+            response.setContentType(whitelist.getContentType());
+            this.flush(super.config.getFileDir() + fileName, response, null, Math.toIntExact(fileSystem.getSize()), fileSystem);
+
         }
 
     }
@@ -191,6 +213,62 @@ public class FileOpsController extends BaseController {
         }
 
         return saveName;
+    }
+
+    /**
+     * 读取文件 并返回流
+     */
+    private void flush(String filePath, HttpServletResponse response, Integer seek, int reqSize, FileSystem fileSystem) {
+
+        OutputStream out = null;
+        RandomAccessFile file = null;
+        try {
+            // 处理文件 返回流
+            out = response.getOutputStream();
+
+            // 只读模式
+            file = new RandomAccessFile(filePath, "r");
+            if (null != seek) {
+                file.seek(seek);
+            }
+
+            // 每次读取的大小
+            byte[] buffer = new byte[4096];
+
+            int needSize = reqSize;
+            while (needSize > 0) {
+                int len = file.read(buffer);
+                if (needSize < buffer.length) {
+                    out.write(buffer, 0, needSize);
+                } else {
+                    out.write(buffer, 0, len);
+                    if (len < buffer.length) {
+                        break;
+                    }
+                }
+                needSize -= buffer.length;
+            }
+
+            fileSystem.setSize(file.length());
+            fileSystem.setNumber(fileSystem.getNumber() + 1);
+            fileSystem.setService(System.currentTimeMillis());
+            super.generalDaoHelper.save(fileSystem);
+        } catch (Exception e) {
+            throw new NoteException(e);
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+                if (file != null) {
+                    file.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
     }
 
 }

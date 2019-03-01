@@ -24,4 +24,9 @@ public class Whitelist {
      */
     private String contentType;
 
+    /**
+     * 是否需要断点续传
+     */
+    private Boolean range;
+
 }

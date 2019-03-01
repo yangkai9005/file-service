@@ -25,9 +25,9 @@ public class FileSystem {
     private String originalFilename;
 
     /**
-     * 客户端ip
+     * 文件大小 单位byte(b)
      */
-    private String callIp;
+    private Long size;
 
     /**
      * 下载次数

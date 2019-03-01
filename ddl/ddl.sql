@@ -6,8 +6,8 @@ create table filesystem
     primary key,
   savedFileName varchar(64) not null comment '保存的文件名',
   originalFileName varchar(64) not null comment '原始文件名',
-  callIp varchar(16) not null comment '调用时 客户端ip',
   number bigint default 0 not null comment '下载次数',
+  size bigint default 0 not null,
   service bigint not null comment '最后一次使用文件的时间 时间戳',
   serviceDisplay varchar(32) not null comment '最后一次使用文件的时间',
   entry bigint not null comment '文件上传时间 时间戳',
@@ -26,6 +26,7 @@ create table whitelist
     primary key,
   fileHeader varchar(8) not null comment '文件头',
   contentType varchar(16) not null comment '文件content-type',
+  `range` bit default b'0' not null comment '是否需要断点续传',
   constraint whitelist_fileHeader_uindex
     unique (fileHeader)
 );
