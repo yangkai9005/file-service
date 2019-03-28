@@ -4,14 +4,20 @@
 搭建文件服务器时, 文件几乎冗杂, 上传时间太久无用的文件也无人清理
 
 ## 项目配置
-> * 以文件头判断文件类型 与后缀名无关
-> * 文件头可从项目日志中读取 或使用[「Files.getFileHeader()」](src/main/java/org/elsa/filemanager/common/utils/Files.java)
-> * [「yml」](src/main/resources/application-dev.yml)文件中config域配置项目基本内容 <br>
+> * [「yml」](src/main/resources/application-dev.yml)文件中upload域字段含义 <br>
 
     file-dir     ->  文件存储目录
-    expired-day  ->  文件过期时间 超过天数文件将被删除
+    tmp-dir      ->  临时文件存储目录
+    ups-buffer   ->  上传文件时 内存缓冲 
+                     超过改大小的文件将存放在tmp-dir
+    get-buffer   ->  视频请求头Range 断点续传时 内存缓冲
+    read-bytes   ->  流式下载时 每次写入通道的bytes
+    timeout      ->  MD5校验后 凭证的使用有效时间
+    file-max     ->  上传文件的最大size
+    size-max     ->  请求body最大size
 
 ## api展示
+> * 文件秒传 MD5校验 [「/md5」](.image/md5.jpg)
 > * 上传文件 支持批量 [「/ups」](.image/ups.jpg)
 > * 下载文件 单个下载 [「/get」](.image/get.jpg)
 
@@ -22,8 +28,7 @@
    [「js隐藏于图片」](https://blog.csdn.net/shixing_11/article/details/7072804)
 
 ## 适用范围
-> 仅适用于中小型文件服务器 <br>
-> 大型或分布式文件服务器... (一个人也做不到 hahah..)
+> 仅适用于中小型文件服务器
 
 ## 开源协议
 Copyright 2018 valord577

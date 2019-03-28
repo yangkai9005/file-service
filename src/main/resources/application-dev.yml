@@ -1,13 +1,12 @@
 spring:
   servlet:
     multipart:
-      max-file-size: 16MB
-      max-request-size: 128MB
+      enabled: false
   datasource:
     name: file-manager
-    url: jdbc:mysql://example.com:3306/fileManager?autoReconnect=true&useUnicode=yes&useSSL=false&characterEncoding=UTF-8
-    username: valord577
-    password: valord577
+    url: jdbc:mysql://example.com:3306/fileService?autoReconnect=true&useUnicode=yes&useSSL=false&characterEncoding=UTF-8
+    username: example
+    password: example
     sql-script-encoding: UTF-8
     platform: mysql
     continue-on-error: false
@@ -29,12 +28,34 @@ spring:
 
 server:
   port: 65512
+#  port: 443
+#  ssl:
+#    key-store: cert/files.pfx
+#    key-store-password: example
+#    key-store-type: PKCS12
+  undertow:
+    io-threads: 2
+    worker-threads: 8
+    buffer-size: 1024
+    direct-buffers: true
 
 mybatis:
   mapper-locations: classpath:mapper/*Mapper.xml
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-config:
+upload:
   file-dir: files
-  expired-day: 365
+  tmp-dir: tmps
+  # 上传内存缓冲 128M
+  ups-buffer: 134217728
+  # 下载内存缓冲 32M
+  get-buffer: 33554432
+  # 每次读取的bytes 1M
+  read-bytes: 1048576
+  # md5校验后 上传凭证的使用有效时间
+  timeout: 500000
+  # 256M
+  file-max: 268435456
+  # 288M
+  size-max: 301989888
