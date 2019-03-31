@@ -3,7 +3,7 @@ spring:
     multipart:
       enabled: false
   datasource:
-    name: file-manager
+    name: file-service
     url: jdbc:mysql://example.com:3306/fileService?autoReconnect=true&useUnicode=yes&useSSL=false&characterEncoding=UTF-8
     username: example
     password: example
