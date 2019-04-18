@@ -1,6 +1,10 @@
 ### Darwim(mac) files
 .DS_Store
 
+### Project files
+files
+tmps
+
 ### IntelliJ project files
 .idea
 *.iml
@@ -44,4 +48,3 @@ buildNumber.properties
 .mvn
 mvnw
 mvnw.cmd
-
